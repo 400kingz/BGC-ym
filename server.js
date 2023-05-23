@@ -53,8 +53,9 @@ app.post('/chat', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-const server = app.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
-});
+}
+);
 
-server.timeout = 70000;
+
