@@ -1,55 +1,42 @@
 const express = require('express');
-const app = express();
-const axios = require('axios');
-const { promisify } = require('util');
-const cache = require('memory-cache');
 const bodyParser = require('body-parser');
+const { Configuration, OpenAIApi } = require('openai');
 
-// Set up a rate limiter
-const rateLimit = require("express-rate-limit");
-const limiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10 // limit each IP to 10 requests per windowMs
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Set up OpenAI configuration
+const configuration = new Configuration({
+  organization: 'org-POwYe8cvtR3ywvUJenzumikx',
+  apiKey: process.env.OPENAI_API_KEY,
 });
+const openai = new OpenAIApi(configuration);
 
-// Apply rate limiter to all requests
-app.use(limiter);
-
-// Set up body parser for parsing JSON
+// Middleware
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
-
+// Routes
 app.post('/chat', async (req, res) => {
-  const prompt = req.body.prompt;
-  
-  // Check the cache first
-  const cachedResponse = cache.get(prompt);
-  if (cachedResponse) {
-    return res.send(cachedResponse);
-  }
-  
   try {
-    const response = await axios.post('https://api.openai.com/v1/engines/davinci-codex/completions', {
-      max_tokens: 1500,
-      temperature: 0.5,
-      prompt: prompt
-    }, {
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_SECRET_KEY}`,
-        'Content-Type': 'application/json'
-      }
+    const { prompt } = req.body;
+
+    const response = await openai.Completion.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'system', content: 'You are a helpful assistant.' }, { role: 'user', content: prompt }],
+      temperature: 0.7,
     });
 
-    // Cache the response
-    cache.put(prompt, response.data, 60 * 1000);  // Cache for 1 minute
-    
-    res.send(response.data);
+    const { choices } = response;
+    const assistantReply = choices[0].message.content;
+
+    res.json({ message: assistantReply });
   } catch (error) {
-    console.error(`Failed to fetch chat response: ${error}`);
-    res.status(500).send('Failed to fetch chat response');
+    console.error('Failed to fetch chat response:', error);
+    res.status(500).json({ error: 'Failed to fetch chat response' });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Start the server
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
+});
