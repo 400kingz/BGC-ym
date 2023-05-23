@@ -17,6 +17,8 @@ app.use(limiter);
 
 // Set up body parser for parsing JSON
 app.use(bodyParser.json());
+app.use(express.static('public'));
+
 
 app.post('/chat', async (req, res) => {
   const prompt = req.body.prompt;
