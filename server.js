@@ -36,7 +36,7 @@ app.post('/chat', async (req, res) => {
       prompt: prompt
     }, {
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_KEY}`,
+        'Authorization': `Bearer ${process.env.OPENAI_SECRET_KEY}`,
         'Content-Type': 'application/json'
       }
     });
